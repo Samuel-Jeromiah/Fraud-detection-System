@@ -7,7 +7,7 @@
 const FALLBACK =
   process.env.NODE_ENV === "development"
     ? "http://localhost:8000"
-    : "https://fraud-detection-api.onrender.com";
+    : "https://fraud-detection-api-fux4.onrender.com";
 
 export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || FALLBACK).replace(/\/+$/, "");
 
