@@ -12,24 +12,24 @@ import {
 import { Panel } from "@/components/ui";
 
 const stats = [
-  { label: "Engineered features", value: "31" },
+  { label: "Encoded features", value: "26" },
   { label: "Model", value: "XGBoost" },
-  { label: "Decision threshold", value: "0.30" },
+  { label: "Decision threshold", value: "18.91%" },
   { label: "Transaction categories", value: "14" },
 ];
 
 const steps = [
-  { icon: Boxes, title: "Ingest", body: "1.3M+ historical credit-card transactions, heavily imbalanced (~0.6% fraud)." },
-  { icon: Layers, title: "Engineer", body: "31 features - amount ratios, distance-from-home, time-of-day, target-encoded merchant/category." },
-  { icon: ShieldCheck, title: "Train", body: "XGBoost with SMOTE balancing; the decision threshold is tuned (0.30), not left at 0.5." },
-  { icon: Gauge, title: "Score", body: "Any new transaction is scored in real time and assigned a risk tier." },
+  { icon: Boxes, title: "Split", body: "1,296,675 development transactions are split chronologically; 555,719 later transactions are held out for the final test." },
+  { icon: Layers, title: "Engineer", body: "12 numeric signals plus 14 one-hot category features. Customer and merchant history uses earlier transactions, excluding the current event and fraud labels." },
+  { icon: ShieldCheck, title: "Train", body: "XGBoost fits on the earliest 778,005 rows with fraud-class weighting and a separate early-stopping window. No SMOTE is used." },
+  { icon: Gauge, title: "Calibrate & score", body: "Isotonic calibration adjusts the scores. A later validation window selects the 18.91% alert threshold before the untouched test is evaluated." },
 ];
 
 const features = [
-  { icon: ScanSearch, title: "Live risk scoring", body: "Enter a transaction and get an instant fraud probability, decision, and per-factor breakdown - served straight from the trained model." },
-  { icon: BarChart3, title: "Honest feature importance", body: "The Model page reads importances directly from the live XGBoost model, so what you see is what actually drives predictions." },
-  { icon: ShieldCheck, title: "Threshold-aware", body: "Fraud is rare, so accuracy is misleading. The model optimises recall at a tuned threshold to catch fraud without drowning analysts in alerts." },
-  { icon: Workflow, title: "Reproducible pipeline", body: "From raw transactions through feature engineering, balancing, and evaluation - the whole path is documented." },
+  { icon: ScanSearch, title: "Interactive risk scoring", body: "Enter a transaction and its prior history to get a calibrated probability and alert decision. Displayed input signals provide context, not an explanation of each model prediction." },
+  { icon: BarChart3, title: "Model feature importance", body: "The Model page reads global feature importance from the live XGBoost model. These values describe model-wide associations, not the cause of an individual score." },
+  { icon: ShieldCheck, title: "Threshold-aware", body: "The threshold maximises validation precision while meeting an 80% recall target. On the final test, recall is 80.56% and precision is 35.07%, making the false-alert tradeoff visible." },
+  { icon: Workflow, title: "Reproducible pipeline", body: "Chronological splits, past-only history, class weighting, calibration checks, and a held-out final evaluation are documented and saved with the model." },
 ];
 
 const tech = ["Next.js 16", "Tailwind v4", "FastAPI", "XGBoost", "scikit-learn", "Plotly"];
@@ -42,11 +42,12 @@ export default function Home() {
           <span className="h-1.5 w-1.5 rounded-full bg-success" /> Fraud Detection · XGBoost + FastAPI
         </div>
         <h1 className="max-w-3xl text-4xl font-bold leading-[1.1] text-fg sm:text-5xl">
-          Catch fraudulent transactions <span className="text-gradient">before they clear.</span>
+          Explore transaction fraud <span className="text-gradient">with calibrated risk scores.</span>
         </h1>
         <p className="mt-5 max-w-2xl text-lg leading-relaxed text-fg-muted">
-          FraudGuard scores credit-card transactions in real time with a gradient-boosted model trained on
-          1.3M+ records - turning 31 engineered signals into a single, explainable risk decision.
+          FraudGuard is an academic demo built on synthetic credit-card transactions. A gradient-boosted
+          model combines 26 encoded features into a calibrated fraud-risk score, with results measured on
+          555,719 later transactions held out from model development.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Link

@@ -2,24 +2,26 @@ import { ArrowRight, Boxes, Gauge, Layers, Scale, ShieldCheck } from "lucide-rea
 import { PageHeader, Panel } from "@/components/ui";
 
 const steps = [
-  { icon: Boxes, title: "Ingest", detail: "1.3M transactions" },
-  { icon: Layers, title: "Engineer", detail: "31 features" },
-  { icon: Scale, title: "SMOTE balance", detail: "rare-class oversampling" },
-  { icon: ShieldCheck, title: "XGBoost", detail: "500 trees" },
-  { icon: Gauge, title: "Tune threshold", detail: "0.3029" },
+  { icon: Boxes, title: "Split by time", detail: "separate development and test periods" },
+  { icon: Layers, title: "Engineer", detail: "26 encoded features; past-only history" },
+  { icon: ShieldCheck, title: "Fit XGBoost", detail: "class weighting and early stopping" },
+  { icon: Scale, title: "Calibrate", detail: "isotonic selected by Brier score" },
+  { icon: Gauge, title: "Validate & test", detail: "select 0.1891 threshold, then test" },
 ];
 
 const featureGroups = [
-  { group: "Transaction", count: 6, examples: "amt, amt_ratio, amt_deviation, trans_hour" },
-  { group: "Temporal", count: 4, examples: "trans_day_of_week, is_weekend, trans_month, unix_time" },
-  { group: "Geographic", count: 2, examples: "distance_from_home, city_pop" },
-  { group: "Customer", count: 3, examples: "age, gender_encoded, customer_avg_amt" },
-  { group: "Merchant / category", count: 16, examples: "merchant_encoded, category_avg_amt, cat_* one-hots" },
+  { group: "Transaction", count: 2, examples: "amount_log, amount_to_customer_avg" },
+  { group: "Temporal", count: 4, examples: "transaction_hour, day_of_week, is_weekend, month" },
+  { group: "Geographic", count: 2, examples: "distance_from_home_km, city_pop_log" },
+  { group: "Customer history", count: 2, examples: "customer_prior_count, customer_prior_avg_amount" },
+  { group: "Merchant history", count: 2, examples: "customer_merchant_prior_count, is_new_to_merchant" },
+  { group: "Category", count: 14, examples: "one-hot indicators for the 14 transaction categories" },
 ];
 
 const stack = [
   ["Model", "XGBoost (gradient-boosted trees)"],
-  ["Class balancing", "SMOTE oversampling"],
+  ["Class imbalance", "Fraud-class weighting; no SMOTE"],
+  ["Calibration", "Isotonic regression"],
   ["Serving API", "FastAPI on Render"],
   ["Frontend", "Next.js + Tailwind on Vercel"],
   ["Charts", "Plotly"],
@@ -31,7 +33,7 @@ export default function PipelinePage() {
       <PageHeader
         eyebrow="Insights"
         title="Pipeline"
-        description="How a raw transaction becomes a real-time risk score - from ingestion through to the served model."
+        description="How synthetic transaction data becomes a calibrated risk score, with separate periods for fitting, calibration, threshold selection, and final testing."
       />
 
       <Panel className="mb-6 p-6">
@@ -48,11 +50,29 @@ export default function PipelinePage() {
             </div>
           ))}
         </div>
+        <div className="mt-5 space-y-3 text-sm leading-relaxed text-fg-muted">
+          <p>
+            The 1,296,675 development rows are kept in time order: 60% (778,005) fit the model,
+            10% (129,667) guide early stopping, 15% (194,501) calibrate probabilities, and
+            15% (194,502) select the decision threshold. Preprocessing is fitted only on the model-fit window.
+          </p>
+          <p>
+            Calibration candidates are fitted on the earlier two thirds of the calibration window and
+            compared on its later third using Brier score. Isotonic calibration wins and is then refitted
+            on that full window. The separate threshold-validation window selects 0.1891 to maximise
+            precision while meeting an 80% recall target.
+          </p>
+          <p>
+            Finally, the fixed model, calibrator, and threshold are evaluated on 555,719 later external
+            test transactions, which were not used to fit or select them. History features use earlier
+            transactions only, including earlier test events as time advances, without their fraud labels.
+          </p>
+        </div>
       </Panel>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Panel className="overflow-x-auto p-6 scrollbar-thin">
-          <h3 className="mb-4 text-lg font-bold text-fg">Feature groups (31 total)</h3>
+          <h3 className="mb-4 text-lg font-bold text-fg">Feature groups (26 encoded features)</h3>
           <table className="w-full text-left text-sm">
             <thead className="border-b border-line bg-white/5 text-xs uppercase tracking-wide text-fg-subtle">
               <tr><th className="px-4 py-3">Group</th><th className="px-4 py-3">Count</th><th className="px-4 py-3">Examples</th></tr>
@@ -67,6 +87,11 @@ export default function PipelinePage() {
               ))}
             </tbody>
           </table>
+          <p className="mt-4 text-xs leading-relaxed text-fg-muted">
+            The model uses 12 numeric features and 14 category indicators. Customer averages and visit
+            counts exclude the current transaction. Categories use one-hot encoding; merchant history
+            uses prior counts, with no target encoding or demographic features.
+          </p>
         </Panel>
 
         <Panel className="p-6">
@@ -80,7 +105,10 @@ export default function PipelinePage() {
             ))}
           </dl>
           <div className="mt-4 rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-fg-muted">
-            <span className="font-medium text-warning">Note on imbalance:</span> fraud is ~0.6% of transactions, so raw accuracy is misleading. The model is tuned for recall at a calibrated threshold, trading some precision to avoid missing fraud.
+            <span className="font-medium text-warning">Note on imbalance:</span> fraud is 0.58% of development
+            transactions and 0.39% of the final test. At the selected threshold, test recall is 80.56% and
+            precision is 35.07%. This academic demo still produces false alerts and is not a production
+            fraud decision system.
           </div>
         </Panel>
       </div>
