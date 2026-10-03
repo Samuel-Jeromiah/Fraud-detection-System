@@ -12,7 +12,7 @@ const FALLBACK_CATEGORIES = [
 ];
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-interface Meta { threshold: number; categories: string[] }
+interface Meta { threshold: number; categories: string[]; model_status?: string }
 interface ScoreResult {
   probability: number;
   threshold: number;
@@ -23,12 +23,12 @@ interface ScoreResult {
 }
 
 const SAMPLE = {
-  amount: 925, category: "grocery_pos", hour: 2, day_of_week: 6, distance_from_home: 280,
-  age: 81, gender: "Female", customer_avg_amt: 48, merchant_risk: 0.8, city_pop: 1200, is_new_merchant: true,
+  amount: 925, category: "grocery_pos", hour: 2, day_of_week: 6, distance_from_home_km: 450,
+  customer_prior_count: 6, customer_prior_avg_amount: 48, customer_merchant_prior_count: 0, city_pop: 1200,
 };
 const SAFE = {
-  amount: 42, category: "food_dining", hour: 13, day_of_week: 2, distance_from_home: 4,
-  age: 34, gender: "Male", customer_avg_amt: 55, merchant_risk: 0.3, city_pop: 80000, is_new_merchant: false,
+  amount: 42, category: "food_dining", hour: 13, day_of_week: 2, distance_from_home_km: 6,
+  customer_prior_count: 120, customer_prior_avg_amount: 55, customer_merchant_prior_count: 12, city_pop: 80000,
 };
 
 const tierTone = { LOW: "success", MEDIUM: "warning", HIGH: "danger", CRITICAL: "danger" } as const;
@@ -69,9 +69,9 @@ export default function ScorecardPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Live demo · scored by the real model"
+        eyebrow="Interactive scoring demo"
         title="Risk Scorecard"
-        description="Enter a transaction and the trained XGBoost model returns a fraud probability, a threshold-based decision, and the signals behind it. Nothing is mocked - this calls the model directly."
+        description="Enter an event-time transaction snapshot. The API returns a fraud-risk probability and threshold-based alert. Prior-history inputs represent values a production feature store would supply."
         actions={
           <>
             <Button variant="subtle" type="button" onClick={() => { setForm({ ...SAMPLE }); setResult(null); setError(null); }}>
@@ -114,8 +114,8 @@ export default function ScorecardPage() {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="distance" className={labelCls}>Distance from home (mi)</label>
-                  <input id="distance" type="number" min={0} step="any" value={form.distance_from_home} onChange={(e) => set("distance_from_home", parseFloat(e.target.value) || 0)} className={inputCls} />
+                  <label htmlFor="distance" className={labelCls}>Distance from home (km)</label>
+                  <input id="distance" type="number" min={0} step="any" value={form.distance_from_home_km} onChange={(e) => set("distance_from_home_km", parseFloat(e.target.value) || 0)} className={inputCls} />
                 </div>
               </fieldset>
 
@@ -125,30 +125,21 @@ export default function ScorecardPage() {
                   Customer & merchant
                 </legend>
                 <div>
-                  <label htmlFor="avg" className={labelCls}>Typical spend ($)</label>
-                  <input id="avg" type="number" min={0} step="any" value={form.customer_avg_amt} onChange={(e) => set("customer_avg_amt", parseFloat(e.target.value) || 0)} className={inputCls} />
+                  <label htmlFor="avg" className={labelCls}>Prior average spend ($)</label>
+                  <input id="avg" type="number" min={0} step="any" value={form.customer_prior_avg_amount} onChange={(e) => set("customer_prior_avg_amount", parseFloat(e.target.value) || 0)} className={inputCls} />
                 </div>
                 <div>
-                  <label htmlFor="age" className={labelCls}>Age</label>
-                  <input id="age" type="number" min={14} max={100} step={1} value={form.age} onChange={(e) => set("age", parseInt(e.target.value) || 0)} className={inputCls} />
+                  <label htmlFor="prior-count" className={labelCls}>Prior transactions</label>
+                  <input id="prior-count" type="number" min={0} step={1} value={form.customer_prior_count} onChange={(e) => set("customer_prior_count", parseInt(e.target.value) || 0)} className={inputCls} />
                 </div>
                 <div>
-                  <label htmlFor="merch" className={labelCls}>Merchant risk · {form.merchant_risk.toFixed(2)}</label>
-                  <input id="merch" type="range" min={0} max={1} step={0.01} value={form.merchant_risk} onChange={(e) => set("merchant_risk", parseFloat(e.target.value))} className="h-2 w-full cursor-pointer accent-[var(--color-accent)]" />
+                  <label htmlFor="merchant-visits" className={labelCls}>Prior visits to this merchant</label>
+                  <input id="merchant-visits" type="number" min={0} step={1} value={form.customer_merchant_prior_count} onChange={(e) => set("customer_merchant_prior_count", parseInt(e.target.value) || 0)} className={inputCls} />
                 </div>
                 <div>
                   <label htmlFor="pop" className={labelCls}>City population</label>
                   <input id="pop" type="number" min={0} step="any" value={form.city_pop} onChange={(e) => set("city_pop", parseInt(e.target.value) || 0)} className={inputCls} />
                 </div>
-                <div className="flex items-center gap-6 pt-1">
-                  <span className={labelCls + " mb-0"}>Gender</span>
-                  <label className="flex items-center gap-2 text-sm text-fg"><input type="radio" name="gender" checked={form.gender === "Male"} onChange={() => set("gender", "Male")} className="accent-[var(--color-brand)]" /> Male</label>
-                  <label className="flex items-center gap-2 text-sm text-fg"><input type="radio" name="gender" checked={form.gender === "Female"} onChange={() => set("gender", "Female")} className="accent-[var(--color-brand)]" /> Female</label>
-                </div>
-                <label className="flex items-center gap-2 text-sm text-fg-muted">
-                  <input type="checkbox" checked={form.is_new_merchant} onChange={(e) => set("is_new_merchant", e.target.checked)} className="h-4 w-4 accent-[var(--color-brand)]" />
-                  First time at this merchant
-                </label>
               </fieldset>
             </div>
             <Button type="submit" loading={loading} className="w-full">

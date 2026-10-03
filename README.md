@@ -1,63 +1,84 @@
-# 💳 Intelligent Credit Card Fraud Detection System
+# FraudGuard: calibrated fraud-risk course project
 
-An end-to-end Machine Learning solution for detecting fraudulent credit card transactions using **XGBoost**, **SMOTE**, and **Streamlit**.
+FraudGuard is a Foundations of Artificial Intelligence project that classifies a synthetic card transaction as higher or lower fraud risk. It is deliberately designed as an academic risk-scoring prototype, not as a system that can automatically accuse a customer of fraud.
 
-[**🚀 Live Demo**](https://fraud-detection-system-samuel.streamlit.app/)
+## Why this project exists
 
-### **🚀 Project Overview**
-This project addresses the critical challenge of credit card fraud detection in highly imbalanced datasets (only 0.58% fraud). By engineering advanced behavioral and geographic features and utilizing synthetic oversampling, we built a model that achieves elite performance in identifying suspicious activities.
+Fraud is rare in the source data. A model that calls every transaction legitimate can look accurate while catching no fraud at all. This project therefore measures ranking quality, calibration, recall, precision, and the practical alert threshold instead of relying on accuracy alone.
 
-**Source Data**: The dataset used is the [Credit Card Fraud Detection Dataset](https://www.kaggle.com/datasets/kartik2112/fraud-detection) by Kartikey Bartwal on Kaggle.
+The rebuild replaces a legacy notebook workflow with a time-ordered, leakage-safe pipeline:
 
-### **✨ Key Features**
-- **Deep EDA**: Analysis of transaction patterns and class imbalance.
-- **Advanced Feature Engineering**: 
-  - **Temporal**: Hour of day, day of week, and weekend flags.
-  - **Geographic**: `distance_from_home` calculated via Haversine formula.
-  - **Behavioral**: `amt_ratio`, `amt_deviation`, and merchant familiarity counts.
-- **Data Balancing**: Used **SMOTE** to handle extreme class imbalance.
-- **High-Performance Model**: Trained **XGBoost** with GPU acceleration.
-- **Threshold Optimization**: Fine-tuned decision boundaries to prioritize **Recall (88%)**.
-- **Interactive UI**: Real-time fraud checker web app built with **Streamlit**.
+1. Fit the model on early transactions.
+2. Use a later window for early stopping.
+3. Calibrate raw XGBoost scores on another future window.
+4. Select the alert threshold on a separate validation window.
+5. Report final performance only once on `fraudTest.csv`, a later untouched period.
 
-## 📊 Model Performance
-The model is optimized to "catch the thief" (Minimize False Negatives).
+See [the rebuild plan](docs/REBUILD_PLAN.md), [feature/data dictionary](docs/DATA_DICTIONARY.md), and [HPC runbook](docs/HPC_RUNBOOK.md).
 
-| Metric | Result |
-| :--- | :--- |
-| **ROC-AUC** | **0.9967** (Elite) |
-| **Recall (Fraud Detection)** | **88.02%** |
-| **Accuracy** | **99.72%** |
-| **Precision** | **59.18%** |
+## Data
 
-### **Visualization**
-The project includes **interactive Plotly graphs** in the notebook for zooming into transaction distributions and viewing performance curves (ROC & Precision-Recall).
+Download the Sparkov synthetic fraud dataset from [Kaggle](https://www.kaggle.com/datasets/kartik2112/fraud-detection) and place these ignored files either in the repository root or in a directory referenced by `FRAUD_DATA_DIR`:
 
-## 📁 Repository Structure
-- `notebooks/`: Contains the full analysis pipeline (`FAI_Project.ipynb`).
-- `data/`: CSV datasets (Training and Testing).
-- `reports/`: Detailed ML Pipeline Report PDF.
-- `app.py`: Streamlit web application.
-- `fraud_model.pkl`: Compressed trained XGBoost brain.
-
-## 🛠️ How to Run
-
-### **1. Notebook Analysis**
-To view the full training process:
-```bash
-jupyter notebook notebooks/FAI_Project.ipynb
+```text
+fraudTrain.csv
+fraudTest.csv
 ```
 
-### **2. Streamlit Web App**
-To launch the interactive fraud checker:
+The local source audit finds 1,296,675 development rows (0.579% fraud) from January 2019 through June 2020, followed by 555,719 untouched test rows (0.386% fraud) through December 2020.
+
+## What the rebuilt model uses
+
+It uses transaction amount, time, category, city population, geographic distance, and history available before the transaction: prior customer count, prior customer average, amount-to-average ratio, and prior visits to the merchant. It does not use raw card IDs, names, addresses, gender, age, occupation, or merchant target encoding. The full rationale is in [the data dictionary](docs/DATA_DICTIONARY.md).
+
+## Train and evaluate
+
+Use Python 3.11+ in a clean virtual environment:
+
 ```bash
-pip install streamlit xgboost plotly pandas numpy
-streamlit run app.py
+python -m venv .venv
+# Windows PowerShell: .\.venv\Scripts\Activate.ps1
+# macOS/Linux: source .venv/bin/activate
+pip install -r requirements-ml.txt
+pip install -e .
+python -m fraudguard.train --audit-only
+python -m fraudguard.train --smoke-test
+python -m fraudguard.train --output-dir artifacts/rebuilt-model
 ```
 
-## 🧠 Technologies Used
-- **Python** (Pandas, NumPy)
-- **Scikit-Learn** & **Imbalanced-Learn**
-- **XGBoost** (GPU Accelerated)
-- **Plotly** & **Seaborn** (Interactive Visualization)
-- **Streamlit** (Web Framework)
+The final command writes a model bundle, JSON model card, metrics, calibration plot, and confusion matrix under `artifacts/rebuilt-model/`. Do not quote those metrics in a report until that run finishes. For HPC training, follow [the runbook](docs/HPC_RUNBOOK.md).
+
+## Run the web demo
+
+The repository includes a FastAPI backend and a Next.js frontend. Until a reviewed rebuilt bundle is copied to `backend/models/model_bundle.joblib`, the API clearly identifies the loaded artifact as the legacy baseline.
+
+```bash
+# Terminal 1
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+
+# Terminal 2
+cd frontend
+npm ci
+npm run dev
+```
+
+Open `http://localhost:3000`. The scorecard inputs are an event-time contract: the prior-history values must come from a transaction-history feature store in a real deployment. The browser is a demonstration interface, not that feature store.
+
+## Repository map
+
+```text
+src/fraudguard/       Reproducible data, feature, evaluation, serving, and training code
+tests/                Leakage-safety unit tests
+backend/              FastAPI scoring service
+frontend/             Next.js demonstration client
+scripts/              HPC submission template
+docs/                 Rebuild plan, data dictionary, and runbook
+legacy-streamlit/     Preserved original Streamlit application
+notebooks/            Preserved original exploratory notebook
+```
+
+## Legacy material
+
+The Streamlit app, notebook, prebuilt `.pkl` artifacts, and prior PDF report remain for comparison. They should not be presented as the rebuilt model: the original notebook performed target encoding with label leakage, calculated some history features with future information, used SMOTE across categorical one-hot fields, and chose its threshold on the same test set used for final metrics.

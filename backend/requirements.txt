@@ -1,7 +1,9 @@
-fastapi==0.135.2
-uvicorn==0.42.0
-pydantic==2.12.5
-numpy==2.4.4
-pandas==3.0.2
-scikit-learn==1.8.0
-xgboost==3.2.0
+# Versions verified in the local rebuilt-pipeline environment (October 2026).
+fastapi==0.142.2
+uvicorn==0.54.0
+pydantic==2.13.5
+numpy==2.5.3
+pandas==2.3.3
+scikit-learn==1.9.1
+xgboost==3.4.1
+joblib==1.6.0

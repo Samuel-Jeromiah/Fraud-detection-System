@@ -20,8 +20,12 @@ export default function BackendStatus() {
   }, []);
 
   useEffect(() => {
-    run();
-  }, [run]);
+    let active = true;
+    checkHealth().then((online) => {
+      if (active) setStatus(online ? "online" : "offline");
+    });
+    return () => { active = false; };
+  }, []);
 
   if (status === "online") return null;
 

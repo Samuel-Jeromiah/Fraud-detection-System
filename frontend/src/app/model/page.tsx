@@ -8,23 +8,20 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { ErrorState, PageHeader, Panel, Skeleton, StatCard } from "@/components/ui";
 
 interface Meta {
+  model_status: string;
   threshold: number;
   n_features: number;
   features: string[];
   categories: string[];
   feature_importance: Record<string, number>;
+  final_test_metrics?: {
+    roc_auc: number;
+    average_precision: number;
+    brier_score: number;
+    precision: number;
+    recall: number;
+  } | null;
 }
-
-// Reported by the training notebook on the held-out test set. Labelled as such
-// in the UI - these are not recomputed live (that needs the Kaggle dataset).
-const REPORTED = [
-  { label: "ROC-AUC", value: "0.9967" },
-  { label: "Recall (fraud caught)", value: "88.0%" },
-  { label: "Training rows", value: "1.30M" },
-  { label: "Test rows", value: "555,719" },
-  { label: "Fraud rate", value: "0.58%" },
-  { label: "Trees", value: "500" },
-];
 
 export default function ModelPage() {
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -41,7 +38,15 @@ export default function ModelPage() {
   };
 
   useEffect(() => {
-    load();
+    let active = true;
+    apiFetch<Meta>("/api/metadata")
+      .then((data) => {
+        if (active) setMeta(data);
+      })
+      .catch((err) => {
+        if (active) setError(err instanceof ApiError ? err.message : "Failed to load model metadata.");
+      });
+    return () => { active = false; };
   }, []);
 
   if (error) {
@@ -74,13 +79,22 @@ export default function ModelPage() {
     marker: { color: "#10b981" },
     hovertemplate: "%{y}: %{x:.3f}<extra></extra>",
   }];
+  const finalMetrics = meta.final_test_metrics
+    ? [
+      { label: "ROC-AUC", value: meta.final_test_metrics.roc_auc.toFixed(4) },
+      { label: "PR-AUC", value: meta.final_test_metrics.average_precision.toFixed(4) },
+      { label: "Brier score", value: meta.final_test_metrics.brier_score.toFixed(4) },
+      { label: "Precision", value: `${(meta.final_test_metrics.precision * 100).toFixed(1)}%` },
+      { label: "Recall", value: `${(meta.final_test_metrics.recall * 100).toFixed(1)}%` },
+    ]
+    : [];
 
   return (
     <div>
-      <PageHeader eyebrow="Insights" title="Model" description="XGBoost gradient-boosted trees. Feature importances below are read live from the deployed model - not hardcoded." />
+      <PageHeader eyebrow="Insights" title="Model" description="Feature importance is read from the currently deployed artifact. It is a global training signal, not an explanation of one transaction." />
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <StatCard label="Algorithm" value="XGBoost" icon={Boxes} />
+        <StatCard label="Model state" value={meta.model_status.replace(/_/g, " ")} icon={Boxes} />
         <StatCard label="Features" value={`${meta.n_features}`} icon={BarChart3} tone="accent" />
         <StatCard label="Decision threshold" value={`${(meta.threshold * 100).toFixed(1)}%`} icon={Gauge} tone="success" />
         <StatCard label="Categories" value={`${meta.categories.length}`} icon={Activity} />
@@ -88,29 +102,31 @@ export default function ModelPage() {
 
       <Panel className="mb-6 flex h-[520px] flex-col p-6">
         <h3 className="text-lg font-bold text-fg">Feature importance (top 15)</h3>
-        <p className="mb-4 text-xs text-fg-muted">Gain-based importance straight from the model. Amount and amount-deviation dominate, followed by category one-hots.</p>
+        <p className="mb-4 text-xs text-fg-muted">Gain-based importance from the deployed tree model. A high value means the feature often helped split training examples; it does not establish causation.</p>
         <div className="min-h-0 flex-1"><Plot data={importancePlot} layout={{ margin: { l: 150, r: 16, t: 8, b: 32 } }} /></div>
       </Panel>
 
       <Panel className="p-6">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-lg font-bold text-fg">Reported test performance</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {REPORTED.map((m) => (
-            <div key={m.label} className="rounded-lg bg-white/5 p-4">
-              <div className="nums text-xl font-semibold text-fg">{m.value}</div>
-              <div className="mt-1 text-xs text-fg-muted">{m.label}</div>
-            </div>
-          ))}
+          <h3 className="text-lg font-bold text-fg">Evaluation status</h3>
         </div>
         <div className="mt-4 flex items-start gap-2 rounded-lg border border-line bg-white/5 p-3 text-xs text-fg-muted">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" aria-hidden />
-          <span>
-            These figures are <span className="text-fg">as reported by the training notebook</span> on a held-out test set. A full
-            precision/PR re-evaluation against the source dataset is on the roadmap - until then they're shown for context, not as live metrics.
+          <span>{meta.model_status.startsWith("rebuilt_")
+            ? "This bundle was rebuilt with time-ordered probability checking and threshold selection. Keep its generated metrics.json and plots with the deployed artifact; it names whether a fitted calibrator improved the held-out calibration check."
+            : "The currently deployed artifact is the legacy baseline. Its old notebook metrics are intentionally not displayed because the threshold was selected on the reported test data. Train and deploy the rebuilt bundle before using this page as a performance report."}
           </span>
         </div>
+        {finalMetrics.length > 0 && (
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {finalMetrics.map((metric) => (
+              <div key={metric.label} className="rounded-lg bg-white/5 p-4">
+                <div className="nums text-xl font-semibold text-fg">{metric.value}</div>
+                <div className="mt-1 text-xs text-fg-muted">{metric.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </Panel>
     </div>
   );

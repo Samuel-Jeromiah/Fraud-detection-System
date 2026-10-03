@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Gauge,
@@ -92,11 +91,6 @@ function Footer() {
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
