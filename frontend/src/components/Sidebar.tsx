@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -32,11 +32,11 @@ const groups: NavGroup[] = [
 function Brand() {
   return (
     <Link href="/" className="focus-ring flex items-center gap-2.5 rounded-lg">
-      <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-tr from-brand to-accent shadow-[0_0_18px_rgba(16,185,129,0.45)]">
-        <ShieldCheck className="h-4 w-4 text-[#04130d]" aria-hidden />
+      <span className="grid h-9 w-9 place-items-center rounded-xl border border-brand/20 bg-brand/10">
+        <ShieldCheck className="h-5 w-5 text-brand" aria-hidden />
       </span>
-      <span className="font-mono text-lg font-bold tracking-tight text-fg">
-        Fraud<span className="text-gradient">Guard</span>
+      <span className="text-lg font-semibold tracking-tight text-fg">
+        FraudGuard<span className="text-brand">.</span>
       </span>
     </Link>
   );
@@ -61,9 +61,9 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
                   className={clsx(
-                    "focus-ring flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
+                    "focus-ring flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition",
                     active
-                      ? "border border-brand/30 bg-brand/15 text-brand"
+                      ? "border border-brand/15 bg-brand/[0.07] text-brand"
                       : "border border-transparent text-fg-muted hover:bg-white/5 hover:text-fg",
                   )}
                 >
@@ -81,19 +81,27 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
 function Footer() {
   return (
-    <div className="border-t border-line px-4 py-4 text-center">
-      <div className="font-mono text-[10px] font-semibold uppercase tracking-widest text-brand/80">
-        Built by Samuel Jeromiah
+    <div className="border-t border-line px-5 py-6">
+      <div className="mb-5 rounded-xl border border-line bg-white/[0.02] p-4">
+        <p className="eyebrow text-brand">Built to learn</p>
+        <p className="mt-2 text-xs leading-5 text-fg-muted">An end-to-end exploration of transaction fraud.</p>
+        <a href="https://github.com/Samuel-Jeromiah/Fraud-detection-System" target="_blank" rel="noreferrer" className="focus-ring mt-2 inline-flex min-h-9 items-center rounded text-xs text-fg hover:text-brand">View source ↗</a>
       </div>
-      <div className="mt-0.5 text-xs text-fg-subtle">FraudGuard · XGBoost</div>
+      <div className="text-xs font-medium text-fg">
+        Samuel Jeromiah
+      </div>
+      <div className="mt-1 text-[11px] text-fg-subtle">Foundations of Artificial Intelligence</div>
     </div>
   );
 }
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
+  const navigationDialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
+    if (open) navigationDialog.current?.showModal();
+    else navigationDialog.current?.close();
     document.body.style.overflow = open ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
@@ -102,11 +110,11 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-line bg-surface/70 backdrop-blur-xl lg:flex">
-        <div className="border-b border-line p-5">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-line bg-[#101718] lg:flex">
+        <div className="flex h-20 items-center px-5">
           <Brand />
         </div>
-        <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
+        <div className="flex-1 overflow-y-auto scrollbar-thin px-3 pt-7">
           <NavLinks />
         </div>
         <Footer />
@@ -124,14 +132,8 @@ export default function Sidebar() {
         </button>
       </header>
 
-      {open && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            aria-label="Close navigation menu"
-            onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          />
-          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col border-r border-line bg-surface shadow-2xl">
+      <dialog ref={navigationDialog} aria-label="Navigation" onClose={() => setOpen(false)} className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[85vw] border-r border-line bg-surface p-0 text-fg backdrop:bg-black/60 backdrop:backdrop-blur-sm">
+          <div className="flex h-full flex-col shadow-2xl">
             <div className="flex items-center justify-between border-b border-line p-5">
               <Brand />
               <button
@@ -147,8 +149,7 @@ export default function Sidebar() {
             </div>
             <Footer />
           </div>
-        </div>
-      )}
+      </dialog>
     </>
   );
 }

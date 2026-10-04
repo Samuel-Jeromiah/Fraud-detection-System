@@ -45,16 +45,16 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
+    <header className="mb-8 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+      <div className="min-w-0">
         {eyebrow && (
-          <div className="mb-2 font-mono text-xs font-medium uppercase tracking-widest text-brand">
+          <div className="eyebrow mb-3 text-brand">
             {eyebrow}
           </div>
         )}
-        <h1 className="text-2xl font-bold text-fg sm:text-3xl">{title}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-fg sm:text-4xl">{title}</h1>
         {description && (
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fg-muted">{description}</p>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-fg-muted">{description}</p>
         )}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
@@ -68,7 +68,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const buttonVariants: Record<NonNullable<ButtonProps["variant"]>, string> = {
-  primary: "bg-brand text-[#04130d] hover:bg-accent shadow-lg shadow-brand/20",
+  primary: "bg-brand text-[#0d2119] hover:bg-accent shadow-sm",
   accent: "bg-accent text-[#04130d] hover:bg-brand font-semibold",
   ghost: "border border-line text-fg-muted hover:text-fg hover:border-line-strong",
   subtle: "bg-white/5 text-fg-muted hover:bg-white/10 hover:text-fg",
@@ -134,13 +134,13 @@ export function StatCard({
   tone?: Tone;
 }) {
   return (
-    <Panel className="relative overflow-hidden p-5" hover>
+    <Panel className="relative min-w-0 overflow-hidden p-5">
       <div className="flex items-start justify-between gap-3">
-        <span className="text-sm text-fg-muted">{label}</span>
-        {Icon && <Icon className={clsx("h-5 w-5 shrink-0", toneText[tone])} aria-hidden />}
+        <span className="text-xs font-medium text-fg-muted">{label}</span>
+        {Icon && <Icon className={clsx("h-4 w-4 shrink-0", toneText[tone])} aria-hidden />}
       </div>
-      <div className="nums mt-3 text-2xl font-semibold text-fg">{value}</div>
-      {sub && <div className="mt-1 text-sm text-fg-muted">{sub}</div>}
+      <div className="nums mt-4 break-words text-2xl font-medium tracking-tight text-fg">{value}</div>
+      {sub && <div className="mt-2 text-xs leading-5 text-fg-subtle">{sub}</div>}
     </Panel>
   );
 }

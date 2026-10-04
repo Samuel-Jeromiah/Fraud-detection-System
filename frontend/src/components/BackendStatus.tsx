@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
-import { API_BASE, checkHealth } from "@/lib/api";
+import { checkHealth } from "@/lib/api";
 
 type Status = "checking" | "online" | "offline";
 
@@ -27,13 +27,17 @@ export default function BackendStatus() {
     return () => { active = false; };
   }, []);
 
-  if (status === "online") return null;
+  if (status === "online") return (
+    <div role="status" className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-brand">
+      <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden /> Scoring API connected
+    </div>
+  );
 
   if (status === "checking") {
     return (
-      <div className="mb-6 flex items-center gap-2 rounded-lg border border-line bg-surface/60 px-4 py-2 text-xs text-fg-muted">
+      <div role="status" className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-fg-muted">
         <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-        Connecting to the Fraud Detection API...
+        Connecting to scoring API
       </div>
     );
   }
@@ -41,14 +45,12 @@ export default function BackendStatus() {
   return (
     <div
       role="status"
-      className="mb-6 flex flex-col gap-3 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-wrap items-center gap-3 rounded-xl border border-warning/20 bg-warning/5 px-3 py-2"
     >
-      <div className="flex items-start gap-2 text-sm">
+      <div className="flex items-start gap-2 text-xs">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
         <span className="text-fg-muted">
-          <span className="font-medium text-warning">API offline.</span> The free backend (
-          <code className="nums text-fg-subtle">{API_BASE.replace(/^https?:\/\//, "")}</code>) sleeps
-          after ~15 min and takes ~30s to wake. The Risk Scorecard needs it.
+          <span className="font-medium text-warning">API unavailable.</span> The free service may be waking up.
         </span>
       </div>
       <button

@@ -1,4 +1,4 @@
-import { ArrowRight, Boxes, Gauge, Layers, Scale, ShieldCheck } from "lucide-react";
+import { Boxes, Gauge, Layers, Scale, ShieldCheck } from "lucide-react";
 import { PageHeader, Panel } from "@/components/ui";
 
 const steps = [
@@ -24,33 +24,40 @@ const stack = [
   ["Calibration", "Isotonic regression"],
   ["Serving API", "FastAPI on Render"],
   ["Frontend", "Next.js + Tailwind on Vercel"],
-  ["Charts", "Plotly"],
+  ["Charts", "Accessible HTML & SVG"],
 ];
 
 export default function PipelinePage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Insights"
-        title="Pipeline"
+        eyebrow="The methodology"
+        title="From signals to scores."
         description="How synthetic transaction data becomes a calibrated risk score, with separate periods for fitting, calibration, threshold selection, and final testing."
       />
 
       <Panel className="mb-6 p-6">
         <h3 className="mb-5 text-lg font-bold text-fg">Training pipeline</h3>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {steps.map((s, i) => (
-            <div key={s.title} className="flex flex-1 items-center gap-3 sm:flex-col sm:gap-3">
-              <div className="flex w-full flex-1 flex-col items-center gap-2 rounded-xl border border-line bg-white/5 p-4 text-center">
+            <div key={s.title} className="min-w-0">
+              <div className="flex h-full flex-col items-start gap-3 rounded-xl border border-line bg-white/[0.02] p-4">
+                <span className="nums text-[10px] text-fg-subtle">STEP 0{i + 1}</span>
                 <div className="grid h-10 w-10 place-items-center rounded-lg bg-brand/10 text-brand"><s.icon className="h-5 w-5" aria-hidden /></div>
                 <div className="text-sm font-semibold text-fg">{s.title}</div>
                 <div className="text-xs text-fg-subtle">{s.detail}</div>
               </div>
-              {i < steps.length - 1 && <ArrowRight className="hidden h-5 w-5 shrink-0 text-fg-subtle sm:block" aria-hidden />}
             </div>
           ))}
         </div>
-        <div className="mt-5 space-y-3 text-sm leading-relaxed text-fg-muted">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Development data split">
+          {[["60%", "Model fitting"], ["10%", "Early stopping"], ["15%", "Calibration"], ["15%", "Threshold validation"]].map(([share, label]) => (
+            <div key={label} className="border-t-2 border-brand/40 pt-3"><div className="nums text-xl text-fg">{share}</div><div className="mt-1 text-xs text-fg-muted">{label}</div></div>
+          ))}
+        </div>
+        <details className="group mt-6 border-t border-line pt-4">
+          <summary className="focus-ring cursor-pointer rounded text-sm font-medium text-brand">How we keep evaluation separate</summary>
+        <div className="mt-4 space-y-3 text-sm leading-7 text-fg-muted">
           <p>
             The 1,296,675 development rows are kept in time order: 60% (778,005) fit the model,
             10% (129,667) guide early stopping, 15% (194,501) calibrate probabilities, and
@@ -68,21 +75,22 @@ export default function PipelinePage() {
             transactions only, including earlier test events as time advances, without their fraud labels.
           </p>
         </div>
+        </details>
       </Panel>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Panel className="overflow-x-auto p-6 scrollbar-thin">
           <h3 className="mb-4 text-lg font-bold text-fg">Feature groups (26 encoded features)</h3>
-          <table className="w-full text-left text-sm">
+          <table className="w-full table-fixed text-left text-sm">
             <thead className="border-b border-line bg-white/5 text-xs uppercase tracking-wide text-fg-subtle">
-              <tr><th className="px-4 py-3">Group</th><th className="px-4 py-3">Count</th><th className="px-4 py-3">Examples</th></tr>
+              <tr><th className="w-[30%] px-2 py-3">Group</th><th className="w-[18%] px-2 py-3">Count</th><th className="px-2 py-3">Examples</th></tr>
             </thead>
             <tbody>
               {featureGroups.map((g) => (
                 <tr key={g.group} className="border-b border-line">
-                  <td className="px-4 py-3 font-medium text-fg">{g.group}</td>
-                  <td className="nums px-4 py-3 text-fg-muted">{g.count}</td>
-                  <td className="nums px-4 py-3 text-xs text-fg-subtle">{g.examples}</td>
+                  <td className="px-2 py-4 text-xs font-medium text-fg">{g.group}</td>
+                  <td className="nums px-2 py-4 text-fg-muted">{g.count}</td>
+                  <td className="break-words px-2 py-4 text-xs leading-5 text-fg-subtle">{g.examples.replaceAll("_", " ")}</td>
                 </tr>
               ))}
             </tbody>

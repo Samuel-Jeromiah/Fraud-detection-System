@@ -21,7 +21,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "FraudGuard - Real-Time Transaction Risk Scoring",
   description:
-    "An XGBoost credit-card fraud classifier (31 engineered features) served as a live risk-scoring API with an interactive scorecard and model dashboard.",
+    "Explore a calibrated XGBoost fraud model with 26 encoded features, an interactive transaction scorecard, and transparent evaluation on synthetic data.",
 };
 
 export default function RootLayout({
@@ -37,13 +37,24 @@ export default function RootLayout({
           Skip to content
         </a>
         <Sidebar />
-        <div className="lg:pl-64">
+        <div className="lg:pl-60">
           <main
             id="main"
-            className="mx-auto min-h-dvh max-w-7xl px-4 pb-16 pt-20 sm:px-6 lg:px-8 lg:pt-8"
+            className="mx-auto min-h-dvh max-w-[1440px] px-5 pb-12 pt-20 sm:px-8 lg:px-10 lg:pt-0 xl:px-12"
           >
-            <BackendStatus />
+            <div className="mb-8 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-line py-4 lg:mb-10 lg:min-h-20">
+              <div className="flex items-center gap-2 text-xs text-fg-subtle">
+                <span className="font-medium text-fg-muted">Research workspace</span>
+                <span aria-hidden>/</span>
+                <span>Synthetic-data demo</span>
+              </div>
+              <BackendStatus />
+            </div>
             {children}
+            <footer className="mt-12 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-5 text-[11px] text-fg-subtle">
+              <span>FraudGuard · Foundations of Artificial Intelligence</span>
+              <span>Designed to explore. Evaluated transparently.</span>
+            </footer>
           </main>
         </div>
       </body>

@@ -24,7 +24,7 @@ export class ApiError extends Error {
 }
 
 const OFFLINE_MSG =
-  "Can't reach the DataLink API. On the free tier it sleeps after ~15 min of inactivity - give it ~30s to wake up, then retry.";
+  "Can't reach the scoring API. The free service may be waking up; wait a moment and try again.";
 
 /** fetch + JSON parse with friendly errors. Body objects are auto-JSON-encoded; pass FormData as-is. */
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
